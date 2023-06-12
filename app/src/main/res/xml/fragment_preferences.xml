@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+    <Preference
+        app:key="@string/settings_key_last_pseudo"
+        app:title="@string/settings_pseudo"
+        />
+    <Preference
+        app:key="@string/settings_key_last_hash"
+        app:isPreferenceVisible="false"
+        />
+    <EditTextPreference
+        app:key="@string/settings_key_apiurl"
+        app:title="@string/settings_api_url"
+        />
+    <Preference
+        app:key="@string/settings_key_history"
+        app:title="@string/settings_historique"
+        />
+</PreferenceScreen>

@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" tools:ignore="Typos">TEA3_RodriguesMakiyama</string>
+    <string name="dataFile">data.json</string>
+    <string name="buttonOK">OK</string>
+    <string name="pseudoText">Pseudo :</string>
+    <string name="menu_settings">Préférences</string>
+    <string name="settings_pseudo">Pseudo</string>
+    <string name="settings_api_url">API Url</string>
+    <string name="settings_historique">Historique</string>
+    <string name="settings_vider_historique">Vider Historique</string>
+
+    <string name="settings_message_clean_history">Historique vidé et l\'URL a été réinitialisée</string>
+    <string name="settings_key_apiurl">apiUrl</string>
+    <string name="settings_key_last_hash">lastHash</string>
+    <string name="settings_key_last_pseudo">lastPseudo</string>
+    <string name="settings_key_history">history</string>
+</resources>
