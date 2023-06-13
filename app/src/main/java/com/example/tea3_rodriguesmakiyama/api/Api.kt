@@ -1,14 +1,14 @@
-package com.example.TEA3_RodriguesMakiyama.api
+package com.example.tea3_rodriguesmakiyama.api
 
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
-import com.example.TEA3_RodriguesMakiyama.api.responses.HashResponse
-import com.example.TEA3_RodriguesMakiyama.api.responses.ItemsResponse
-import com.example.TEA3_RodriguesMakiyama.api.responses.ListsResponse
-import com.example.TEA3_RodriguesMakiyama.api.responses.SignupResponse
-import com.example.TEA3_RodriguesMakiyama.api.responses.UsersResponse
+import com.example.tea3_rodriguesmakiyama.api.responses.HashResponse
+import com.example.tea3_rodriguesmakiyama.api.responses.ItemsResponse
+import com.example.tea3_rodriguesmakiyama.api.responses.ListsResponse
+import com.example.tea3_rodriguesmakiyama.api.responses.SignupResponse
+import com.example.tea3_rodriguesmakiyama.api.responses.UsersResponse
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

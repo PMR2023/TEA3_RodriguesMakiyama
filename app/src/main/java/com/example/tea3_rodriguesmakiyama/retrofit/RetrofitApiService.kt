@@ -1,4 +1,4 @@
-package com.example.TEA3_RodriguesMakiyama.retrofit
+package com.example.tea3_rodriguesmakiyama.retrofit
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory

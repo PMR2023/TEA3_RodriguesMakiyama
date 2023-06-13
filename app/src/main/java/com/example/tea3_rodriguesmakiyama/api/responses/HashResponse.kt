@@ -1,4 +1,4 @@
-package com.example.TEA3_RodriguesMakiyama.api.responses
+package com.example.tea3_rodriguesmakiyama.api.responses
 
 data class HashResponse(
     val apiname: String,

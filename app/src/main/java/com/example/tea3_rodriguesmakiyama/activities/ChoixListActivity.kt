@@ -1,4 +1,4 @@
-package com.example.TEA3_RodriguesMakiyama.activities
+package com.example.tea3_rodriguesmakiyama.activities
 
 import android.app.Activity
 import android.content.Intent
@@ -15,8 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.example.TEA3_RodriguesMakiyama.R
-import com.example.TEA3_RodriguesMakiyama.api.Api
-import com.example.TEA3_RodriguesMakiyama.classes.Data
+import com.example.tea3_rodriguesmakiyama.api.Api
+import com.example.tea3_rodriguesmakiyama.classes.Data
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -1,4 +1,4 @@
-package com.example.TEA3_RodriguesMakiyama.classes
+package com.example.tea3_rodriguesmakiyama.classes
 
 import com.google.gson.Gson
 

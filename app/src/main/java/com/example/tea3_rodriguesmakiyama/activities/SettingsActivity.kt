@@ -1,4 +1,4 @@
-package com.example.TEA3_RodriguesMakiyama.activities
+package com.example.tea3_rodriguesmakiyama.activities
 
 import android.app.Activity
 import android.content.Context
@@ -11,8 +11,8 @@ import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.example.TEA3_RodriguesMakiyama.R
-import com.example.TEA3_RodriguesMakiyama.classes.Data
-import com.example.TEA3_RodriguesMakiyama.retrofit.BASE_URL
+import com.example.tea3_rodriguesmakiyama.classes.Data
+import com.example.tea3_rodriguesmakiyama.retrofit.BASE_URL
 import com.google.gson.Gson
 
 private const val D_TAG = "Settings"
@@ -62,14 +62,14 @@ class SettingsActivity : TEAActivity() {
 
         // Clear the settings "pseudo", "baseUrl" and "history"
         val sharedPref = this.getPreferences(Context.MODE_PRIVATE)
-        Log.d(D_TAG+"onClear", "${getString(R.string.settings_key_apiurl)} before : ${sharedPref.getString(getString(R.string.settings_key_apiurl), "")}")
+        Log.d(D_TAG +"onClear", "${getString(R.string.settings_key_apiurl)} before : ${sharedPref.getString(getString(R.string.settings_key_apiurl), "")}")
         with (sharedPref!!.edit()) {
             putString(getString(R.string.settings_key_apiurl), BASE_URL)
             putString(getString(R.string.settings_key_last_pseudo), "")
             putString(getString(R.string.settings_key_history), "")
             apply()
         }
-        Log.d(D_TAG+"onClear", "${getString(R.string.settings_key_apiurl)} after : ${sharedPref.getString(getString(R.string.settings_key_apiurl), "")}")
+        Log.d(D_TAG +"onClear", "${getString(R.string.settings_key_apiurl)} after : ${sharedPref.getString(getString(R.string.settings_key_apiurl), "")}")
         saveData(Data(), getString(R.string.dataFile))
         toastAlerter(getString(R.string.settings_message_clean_history))
     }
@@ -85,9 +85,9 @@ class SettingsActivity : TEAActivity() {
     }
 
     override fun onBackPressed() {
-        Log.d(D_TAG+"BackPressed", "appUrl sent to other activity=${data.getApiUrl()}")
+        Log.d(D_TAG +"BackPressed", "appUrl sent to other activity=${data.getApiUrl()}")
         val int = Intent()
-        Log.d(D_TAG+"BackPressed", "appUrl sent to other activity=${data.getApiUrl()}")
+        Log.d(D_TAG +"BackPressed", "appUrl sent to other activity=${data.getApiUrl()}")
         int.putExtra("data", data.toJson())
         setResult(Activity.RESULT_OK, int)
 
@@ -193,13 +193,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     history.summary = sharedPreferences?.getString(key, "")
                 }
                 url.key -> {
-                    Log.d(D_TAG+"URLChangeListener", "Entererd and url.text is ${url.text} and its value=${sharedPreferences?.getString(key, "")}")
+                    Log.d(D_TAG +"URLChangeListener", "Entererd and url.text is ${url.text} and its value=${sharedPreferences?.getString(key, "")}")
                     //url.text = sharedPreferences?.getString(key, "")
                     //url.summary = sharedPreferences?.getString(key, "")
                 }
                 else -> {}
             }
-            Log.d(D_TAG+" fim", "$key : ${sharedPreferences?.getString(key, "")}")
+            Log.d(D_TAG +" fim", "$key : ${sharedPreferences?.getString(key, "")}")
         }
 
     }

@@ -1,4 +1,4 @@
-package com.example.TEA3_RodriguesMakiyama.retrofit
+package com.example.tea3_rodriguesmakiyama.retrofit
 
 data class Response(
     val version : Double,

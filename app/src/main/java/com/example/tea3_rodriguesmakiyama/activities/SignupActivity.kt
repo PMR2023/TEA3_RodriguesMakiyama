@@ -1,9 +1,8 @@
-package com.example.TEA3_RodriguesMakiyama.activities
+package com.example.tea3_rodriguesmakiyama.activities
 
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.ColorFilter
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -11,8 +10,8 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import com.example.TEA3_RodriguesMakiyama.R
-import com.example.TEA3_RodriguesMakiyama.api.Api
-import com.example.TEA3_RodriguesMakiyama.classes.Data
+import com.example.tea3_rodriguesmakiyama.api.Api
+import com.example.tea3_rodriguesmakiyama.classes.Data
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -1,14 +1,13 @@
-package com.example.TEA3_RodriguesMakiyama.activities
+package com.example.tea3_rodriguesmakiyama.activities
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.TEA3_RodriguesMakiyama.R
-import com.example.TEA3_RodriguesMakiyama.classes.Data
+import com.example.tea3_rodriguesmakiyama.classes.Data
 import java.io.BufferedReader
 import java.io.FileInputStream
 import java.io.InputStreamReader

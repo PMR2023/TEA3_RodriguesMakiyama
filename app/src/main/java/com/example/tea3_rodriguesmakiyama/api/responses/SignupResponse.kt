@@ -1,4 +1,6 @@
-package com.example.TEA3_RodriguesMakiyama.api.responses
+package com.example.tea3_rodriguesmakiyama.api.responses
+
+import com.example.tea3_rodriguesmakiyama.api.responses.UsersResponseItem
 
 data class SignupResponse(
     val apiname: String,
