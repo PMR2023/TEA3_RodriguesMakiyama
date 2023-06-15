@@ -1,27 +1,24 @@
 package com.example.tea3_rodriguesmakiyama.activities
 
-import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
 import com.example.TEA3_RodriguesMakiyama.R
 import com.example.tea3_rodriguesmakiyama.api.Api
-import com.example.tea3_rodriguesmakiyama.classes.Data
-import com.example.tea3_rodriguesmakiyama.retrofit.RetrofitApi
-import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.example.tea3_rodriguesmakiyama.data.network.retrofit.BASE_URL
+import com.example.tea3_rodriguesmakiyama.data.network.retrofit.RetrofitApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-const val LOG_TAG = "RetrofitTest"
+private const val LOG_TAG_RETROFIT = "RetrofitTest"
+private const val LOG_TAG = "MainActivity"
 
 class MainActivity: TEAActivity() {
-    lateinit var data : Data
     lateinit var pseudoET : EditText
     lateinit var passET : EditText
     lateinit var okButton : Button
@@ -29,66 +26,71 @@ class MainActivity: TEAActivity() {
 
     val mContext = this
 
-    private val coroutineScope = CoroutineScope(
-        Dispatchers.Main
-    )
-
     override fun onCreate(savedInstanceState: Bundle?) {
         setContentView(R.layout.activity_main)
         super.onCreate(savedInstanceState)
 
-        coroutineScope.launch {
+        pseudoET = findViewById(R.id.pseudo)
+        passET = findViewById(R.id.pass)
+        okButton = findViewById(R.id.buttonOKpseudo)
+        signupButton = findViewById(R.id.buttonSignup)
+
+        //test retrofit
+        /*coroutineScope.launch {
             try {
-                var responseLogin = RetrofitApi.retrofitService.connectUser("myuser2", "321")
+                var responseLogin = RetrofitApi.retrofitService.connectUser("myuser", "123")
                 //toastAlerter(responseLogin.toString())
-                Log.d(LOG_TAG, responseLogin.toString())
+                Log.d(LOG_TAG_RETROFIT, responseLogin.toString())
                 //responseLogin = RetrofitApi.retrofitService.addNewUser("myuser2", "321", responseLogin.hash)
-                Log.d(LOG_TAG, responseLogin.toString())
-                //var responseLists = RetrofitApi.retrofitService.getLists(responseLogin.hash)
-                //Log.d(LOG_TAG, responseLists.toString())
-                // add new list WORKS
-                //responseLists = RetrofitApi.retrofitService.addNewList("listaT1", responseLogin.hash)
-                //Log.d(LOG_TAG, responseLists.toString())
-                // delete recently added list
-                //responseLists = RetrofitApi.retrofitService.deleteList(responseLists.list!!.id, responseLogin.hash)
-                //Log.d(LOG_TAG, "DELETE:"+responseLists.toString())
-                //responseLists = RetrofitApi.retrofitService.getLists(responseLogin.hash)
-                //Log.d(LOG_TAG, responseLists.toString())
-                /*responseLists.lists.let {
-                    var responseItems = RetrofitApi.retrofitService.getListItems(responseLists.lists!![0].id, responseLogin.hash)
-                    Log.d(LOG_TAG, responseItems.toString()+responseItems.items!![0].isChecked)
-                    // add new item WORKS
-                    //responseItems = RetrofitApi.retrofitService.addNewItemToList(responseLists.lists!![0].id, "ItemT1", responseLogin.hash)
-                    //Log.d(LOG_TAG, responseItems.toString())
-                    // delete recently added item WORKS
-                    //responseItems = RetrofitApi.retrofitService.deleteItemOfList(responseLists.lists!![0].id, responseItems.item!!.id, responseLogin.hash)
-                    //responseItems = RetrofitApi.retrofitService.getListItems(responseLists.lists!![0].id, responseLogin.hash)
-                    //Log.d(LOG_TAG, responseItems.toString())
-
-                }*/
-                Log.d(LOG_TAG, "Fin du test Retrofit")
-            } catch(_: Exception) {
-
+                Log.d(LOG_TAG_RETROFIT, responseLogin.toString())
+                val responseLists = RetrofitApi.retrofitService.getLists(responseLogin.hash)
+                Log.d(LOG_TAG_RETROFIT, responseLists.toString())
+                var responseItems = RetrofitApi.retrofitService.getListItems(responseLists.lists!![0].id, responseLogin.hash)
+                Log.d(LOG_TAG_RETROFIT, responseItems.toString())
+                //add new item WORKS
+                //responseItems = RetrofitApi.retrofitService.addNewItemToList(responseLists.lists[0].id, "ItemT1", responseLogin.hash)
+                responseItems = RetrofitApi.retrofitService.updateItemOfList(responseLists.lists[0].id, responseItems.items!![0].id, 1, responseLogin.hash)
+                Log.d(LOG_TAG_RETROFIT, responseItems.toString())
+                // delete recently added item WORKS
+                //responseItems = RetrofitApi.retrofitService.deleteItemOfList(responseLists.lists!![0].id, responseItems.item!!.id, responseLogin.hash)
+                //responseItems = RetrofitApi.retrofitService.getListItems(responseLists.lists!![0].id, responseLogin.hash)
+                //Log.d(LOG_TAG, responseItems.toString())
+                Log.d(LOG_TAG_RETROFIT, "Fin du test Retrofit test idAuto ")
+            } catch(e: Exception) {
+                Log.e("$LOG_TAG_RETROFIT", "${e.message}")
             }
 
-        }
+        }*/
 
-        data = loadData(filename=getString(R.string.dataFile))
-        Api.setApiUrl(data.getApiUrl())
 
-        if(data.getPseudo() != null && data.getHash() != null) {
-            // Validate pseudo and hash
-            coroutineScope.launch {
-                val response = Api.getLists(data.getHash() ?: "")
-                if(response.success) {
-                    // Redirects to ChoixListActivity
-                    val dataJson = data.toJson()
-                    startActivityForResult(Intent(applicationContext, ChoixListActivity::class.java).apply {
-                        val bundle = Bundle()
-                        bundle.putString("data", dataJson)
-                        putExtras(bundle)
-                    }, 1)
+        // Sees if there's a lastPseudo to autofill and autologin
+        coroutineScope.launch {
+            // Throws an exception if the database is empty
+            try {
+                val lastPseudo = dataProvider.getLastPseudo()
+                pseudoET.setText(lastPseudo.pseudo)
+                if (lastPseudo.hash != null) {
+                    val hash = dataProvider.login(lastPseudo.pseudo, lastPseudo.password!!)
+                    Log.d("$LOG_TAG autoLogin", "hash:$hash")
+                    if (hash != null) {
+                        // Updates the hash from Last Pseudo, just in case!
+                        lastPseudo.hash = hash
+                        dataProvider.updateCachedPseudo(lastPseudo)
+                        Log.d("$LOG_TAG autoLogin", "$lastPseudo hash:$hash")
+                        navigateToShowLists(lastPseudo.pseudo, hash, showCached = false)
+                    } else {
+                        // Create an AlertDialog to ask if the user wants to see the cache,
+                        //  defining buttons, clickListeners and texts
+                        val builder = AlertDialog.Builder(this@MainActivity)
+                        builder.setTitle(getString(R.string.alert_cache_title))
+                        builder.setMessage(getString(R.string.alert_cache_message))
+                        builder.setPositiveButton(getString(R.string.buttonOK)) { _, _ -> navigateToShowLists(lastPseudo.pseudo, lastPseudo.hash!!,true)}
+                        builder.setNegativeButton(R.string.buttonCancel) { _, _ ->}
+                        builder.show()
+                    }
                 }
+            } catch (e : Exception) {
+                Log.e("$LOG_TAG autologin", "Error: ${e.message}")
             }
         }
 
@@ -112,85 +114,53 @@ class MainActivity: TEAActivity() {
             }
         }
 
-        pseudoET = findViewById(R.id.pseudo)
-        passET = findViewById(R.id.pass)
-        okButton = findViewById(R.id.buttonOKpseudo)
-        signupButton = findViewById(R.id.buttonSignup)
 
         // Setting the login listener
         okButton.setOnClickListener {
-            val pseudo = pseudoET.text.toString()
-            val pass = passET.text.toString()
+            val url = sharedPref.getString(getString(R.string.settings_key_apiurl), "")
+            try {
+                // reset base_URL on sharedPreferences
+                Log.d("$LOG_TAG url verify", "new url: $url")
+                dataProvider.setNewUrl(url!!)
 
-            if(pseudo.isNotEmpty() && pass.isNotEmpty()) {
-                coroutineScope.launch {
-                    val response = Api.login(pseudo, pass)
+                // Login attempt
+                val pseudo = pseudoET.text.toString()
+                val pass = passET.text.toString()
 
-                    if(response.success) {
-                        data.login(pseudo, response.hash)
-                        saveData(data, getString(R.string.dataFile))
-                        val dataJson = data.toJson()
-                        startActivityForResult(Intent(applicationContext, ChoixListActivity::class.java).apply {
-                            val bundle = Bundle()
-                            bundle.putString("data", dataJson)
-                            putExtras(bundle)
-                        }, 1)
-                    } else {
-                        toastAlerter("Pseudo ou mot de passe incorrect")
+                if(pseudo.isNotEmpty() && pass.isNotEmpty()) {
+                    coroutineScope.launch {
+                        val hash = dataProvider.login(pseudo, pass)
+                        Log.d("Login", "p=$pseudo p=$pass, $hash")
+                        if(hash != null) {
+                            navigateToShowLists(pseudo, hash, false)
+                        } else {
+                            toastAlerter(getString(R.string.login_error_message))
+                        }
                     }
+                } else {
+                    toastAlerter(getString(R.string.login_invalid_data))
                 }
-            } else {
-                toastAlerter("Saisissez un pseudo et un mot de passe valides")
+            } catch (e: Exception) {
+                Log.e("$LOG_TAG URL Check", "Invalid URL: $url\n${e.message}")
+                toastAlerter("Error: ${e.message}")
             }
         }
 
         // Setting Signup Listener
         signupButton.setOnClickListener {
-            val dataJson = data.toJson()
-            startActivityForResult(Intent(applicationContext, SignupActivity::class.java).apply {
-                val bundle = Bundle()
-                bundle.putString("data", dataJson)
-                putExtras(bundle)
-            }, 1)
+            startActivity(Intent(applicationContext, SignupActivity::class.java))
         }
 
         // Change ActionBar's name (optional)
         supportActionBar?.title = getString(R.string.app_name)
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        pseudoET.setText(data.getPseudo() ?: "")
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, dataAct: Intent?) {
-        super.onActivityResult(requestCode, resultCode, dataAct)
-
-        if(resultCode == Activity.RESULT_OK) {
-            dataAct?.extras?.getString("data")?.let {
-                data = Gson().fromJson(it, Data::class.java)
-            }
-        }
-    }
-
-    override fun navigateToSettings() {
-        val dataJson = data.toJson()
-        startActivityForResult(Intent(applicationContext, SettingsActivity::class.java).apply {
+    private fun navigateToShowLists(pseudo: String, hash: String, showCached: Boolean) {
+        startActivity(Intent(applicationContext, ChoixListActivity::class.java).apply {
             val bundle = Bundle()
-            bundle.putString("data", dataJson)
-            putExtras(bundle)
-        }, 1)
-    }
-
-    override fun disconnect() {
-        data.disconnect()
-        saveData(data, getString(R.string.dataFile))
-
-        val dataJson = data.toJson()
-        startActivity(Intent(applicationContext, MainActivity::class.java).apply {
-            val bundle = Bundle()
-            bundle.putString("data", dataJson)
+            bundle.putString(getString(R.string.key_pseudo), pseudo)
+            bundle.putString(getString(R.string.key_hash), hash)
+            bundle.putBoolean(getString(R.string.key_is_cache), showCached)
             putExtras(bundle)
         })
     }

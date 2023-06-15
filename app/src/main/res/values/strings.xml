@@ -1,17 +1,33 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" tools:ignore="Typos">TEA3_RodriguesMakiyama</string>
+    <string name="settings_action_bar_title">Préférences</string>
+    <string name="shared_preferences_name">shared_settings</string>
     <string name="dataFile">data.json</string>
     <string name="buttonOK">OK</string>
+    <string name="buttonCancel">Annuler</string>
     <string name="pseudoText">Pseudo :</string>
     <string name="menu_settings">Préférences</string>
     <string name="settings_pseudo">Pseudo</string>
     <string name="settings_api_url">API Url</string>
+    <string name="settings_api_summary">Appuyez sur pour modifier l\'URL de l\'API</string>
     <string name="settings_historique">Historique</string>
     <string name="settings_vider_historique">Vider Historique</string>
-
     <string name="settings_message_clean_history">Historique vidé et l\'URL a été réinitialisée</string>
     <string name="settings_key_apiurl">apiUrl</string>
-    <string name="settings_key_last_hash">lastHash</string>
     <string name="settings_key_last_pseudo">lastPseudo</string>
     <string name="settings_key_history">history</string>
+    <string name="alert_cache_title">Problème de connexion</string>
+    <string name="alert_cache_message">Voulez-vous accéder aux données du dernier utilisateur ?</string>
+    <string name="login_error_message">Pseudo ou mot de passe incorrect</string>
+    <string name="login_invalid_data">Saisissez un pseudo et un mot de passe valides</string>
+    <string name="network_error_message">Vérifiez votre connexion internet</string>
+    <string name="delete_error_message">Impossible de supprimer, veuillez réessayer plus tard</string>
+    <string name="alert_connexion_reestablished_title">Connexion rétablie: </string>
+    <string name="alert_connexion_reestablished_message">Les modifications seront envoyées au serveur</string>
+    <string name="key_pseudo">pseudo</string>
+    <string name="key_hash">hash</string>
+    <string name="key_is_cache">isCache</string>
+    <string name="key_list_label">listLabel</string>
+    <string name="key_list_id">listId</string>
+    <string name="signup_action_bar_title">Enregistrement</string>
 </resources>

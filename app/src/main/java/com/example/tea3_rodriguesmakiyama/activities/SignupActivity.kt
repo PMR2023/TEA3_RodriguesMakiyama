@@ -1,7 +1,6 @@
 package com.example.tea3_rodriguesmakiyama.activities
 
-import android.app.Activity
-import android.content.Intent
+import android.content.res.Resources
 import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
@@ -11,34 +10,22 @@ import android.widget.EditText
 import android.widget.TextView
 import com.example.TEA3_RodriguesMakiyama.R
 import com.example.tea3_rodriguesmakiyama.api.Api
-import com.example.tea3_rodriguesmakiyama.classes.Data
-import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class SignupActivity : TEAActivity() {
-    lateinit var data: Data
 
     lateinit var pseudoET: EditText
-    lateinit var passET: EditText
-    lateinit var passConfirmET: EditText
-    lateinit var signupButton: Button
+    private lateinit var passET: EditText
+    private lateinit var passConfirmET: EditText
+    private lateinit var signupButton: Button
     lateinit var warningTV: TextView
 
-    val mContext = this
-    private val coroutineScope = CoroutineScope(
-        Dispatchers.Main
-    )
+    private val mContext = this
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signup)
-
-        intent?.extras?.getString("data")?.let {
-            data = Gson().fromJson(it, Data::class.java)
-        }
 
         pseudoET = findViewById(R.id.pseudoET)
         passET = findViewById(R.id.pass)
@@ -60,16 +47,16 @@ class SignupActivity : TEAActivity() {
             }
         }
 
-        var originalPseudoETBackground = pseudoET.background
-        var originalPassETBackground = passET.background
+        val originalPseudoETBackground = pseudoET.background
+        val originalPassETBackground = passET.background
         signupButton.setOnClickListener {
             val pseudo = pseudoET.text.toString()
             val pass = passET.text.toString()
             val passConfirm = passConfirmET.text.toString()
 
-            pseudoET.setTextColor(Color.BLACK)
+            /*pseudoET.setTextColor(Color.BLACK)
             passET.setTextColor(Color.BLACK)
-            passConfirmET.setTextColor(Color.BLACK)
+            passConfirmET.setTextColor(Color.BLACK)*/
 
             pseudoET.background = originalPseudoETBackground
             passET.background = originalPassETBackground
@@ -125,7 +112,7 @@ class SignupActivity : TEAActivity() {
         pseudoET.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                 warningTV.text = ""
-                pseudoET.setTextColor(Color.BLACK)
+                //pseudoET.setTextColor(resources.getColor(R.color.colorSecondary))
                 pseudoET.background = originalPseudoETBackground
             }
 
@@ -145,22 +132,10 @@ class SignupActivity : TEAActivity() {
 
         // Set up the ActionBar and change its name(optional)
         setSupportActionBar(findViewById(R.id.toolbar))
-        supportActionBar?.title = "Enregistrement"
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        intent?.extras?.getString("data")?.let {
-            data = Gson().fromJson(it, Data::class.java)
-        }
+        supportActionBar?.title = getString(R.string.signup_action_bar_title)
     }
 
     override fun onBackPressed() {
-        val int = Intent()
-        int.putExtra("data", data.toJson())
-        setResult(Activity.RESULT_OK, int)
-
         finish()
     }
 }

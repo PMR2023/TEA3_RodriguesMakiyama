@@ -1,7 +1,7 @@
 package com.example.tea3_rodriguesmakiyama.activities
 
 import android.app.Activity
-import android.content.Context
+import android.app.Application
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -12,14 +12,16 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.example.TEA3_RodriguesMakiyama.R
 import com.example.tea3_rodriguesmakiyama.classes.Data
-import com.example.tea3_rodriguesmakiyama.retrofit.BASE_URL
+import com.example.tea3_rodriguesmakiyama.data.network.retrofit.BASE_URL
 import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val D_TAG = "Settings"
-private var DISCONECT = false
 
 class SettingsActivity : TEAActivity() {
-    lateinit var data: Data
 
     private var history: MutableList<String> = mutableListOf()
 
@@ -31,83 +33,49 @@ class SettingsActivity : TEAActivity() {
             .replace(R.id.settings_container, SettingsFragment())
             .commit()
 
-        supportActionBar?.title = "Préférences"
+        supportActionBar?.title = getString(R.string.settings_action_bar_title)
 
-        intent?.extras?.getString("data")?.let {
-            data = Gson().fromJson(it, Data::class.java)
+        coroutineScope.launch {
+            history = dataProvider.getHistory()
+            // Updating the preference 'history' values
+            with(sharedPref.edit()) {
+                putString(getString(R.string.settings_key_history), getHistoryString())
+                apply()
+            }
         }
-        history = data.getHistory()
 
         findViewById<Button>(R.id.buttonClearHist).setOnClickListener {
             onClearHistory()
         }
 
-        // Updating the preference values
-        val sharedPref = this.getPreferences(Context.MODE_PRIVATE)
-        with(sharedPref!!.edit()) {
-            putString(getString(R.string.settings_key_last_pseudo), getLastPseudo())
-            putString(getString(R.string.settings_key_history), getHistoryString())
-            putString(getString(R.string.settings_key_last_hash), data.getHash())
-            apply()
-        }
     }
 
     private fun onClearHistory() {
-        data.clearHistory()
-        data.setApiUrl(BASE_URL)
         val size = history.size
+
+        coroutineScope.launch {
+            dataProvider.clearCache()
+        }
+
         for (i in 0 until size) {
             history.removeAt(0)
         }
 
         // Clear the settings "pseudo", "baseUrl" and "history"
-        val sharedPref = this.getPreferences(Context.MODE_PRIVATE)
-        Log.d(D_TAG +"onClear", "${getString(R.string.settings_key_apiurl)} before : ${sharedPref.getString(getString(R.string.settings_key_apiurl), "")}")
-        with (sharedPref!!.edit()) {
+        with (sharedPref.edit()) {
             putString(getString(R.string.settings_key_apiurl), BASE_URL)
             putString(getString(R.string.settings_key_last_pseudo), "")
             putString(getString(R.string.settings_key_history), "")
             apply()
         }
-        Log.d(D_TAG +"onClear", "${getString(R.string.settings_key_apiurl)} after : ${sharedPref.getString(getString(R.string.settings_key_apiurl), "")}")
-        saveData(Data(), getString(R.string.dataFile))
+
         toastAlerter(getString(R.string.settings_message_clean_history))
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        intent?.extras?.getString("data")?.let {
-            data = Gson().fromJson(it, Data::class.java)
-        }
-
-        history = data.getHistory()
-    }
-
     override fun onBackPressed() {
-        Log.d(D_TAG +"BackPressed", "appUrl sent to other activity=${data.getApiUrl()}")
-        val int = Intent()
-        Log.d(D_TAG +"BackPressed", "appUrl sent to other activity=${data.getApiUrl()}")
-        int.putExtra("data", data.toJson())
-        setResult(Activity.RESULT_OK, int)
-
         finish()
     }
 
-    override fun disconnect() {
-        DISCONECT = true
-        data.disconnect()
-        saveData(data, getString(R.string.dataFile))
-
-        val dataJson = data.toJson()
-
-        Log.d(D_TAG, "Disconnect: appUrl sent to other activity=${data.getApiUrl()}")
-        startActivity(Intent(applicationContext, MainActivity::class.java).apply {
-            val bundle = Bundle()
-            bundle.putString("data", dataJson)
-            putExtras(bundle)
-        })
-}
     /**
      * Transforms the history in a String that can be saved as a Preference and automatically displayed
      */
@@ -122,59 +90,35 @@ class SettingsActivity : TEAActivity() {
             str
         }
     }
-
-    private fun getLastPseudo(): String {
-        return if (history.isEmpty()) {
-            ""
-        } else {
-            history.last()
-        }
-    }
 }
 
 class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.fragment_preferences, rootKey)
-        val sharedPref = activity?.getPreferences(Context.MODE_PRIVATE)
+        preferenceManager.sharedPreferencesName = getString(R.string.shared_preferences_name)
+        val sharedPref = (activity as SettingsActivity).sharedPref
 
         // Get a reference for the baseApiUrl EditTextPreference
         val baseUrl : EditTextPreference? = findPreference(getString(R.string.settings_key_apiurl))
         baseUrl?.setOnBindEditTextListener { editText ->
-            editText.setText(sharedPref?.getString(baseUrl.key, ""))
+            editText.setText(sharedPref.getString(baseUrl.key, ""))
         }
-        // Setting a SummaryProvider that automatically sets the "summary" attribute
-        baseUrl?.summaryProvider = Preference.SummaryProvider<EditTextPreference> { preference ->
-            val text = preference.text
-            val activity = (activity as SettingsActivity)
-            if (text.isNullOrEmpty()) {
-                activity.data.setApiUrl(BASE_URL)
-                with(sharedPref!!.edit()) {
-                    putString(preference.key, BASE_URL)
-                    apply()
-                }
-                BASE_URL
-            } else {
-                activity.data.setApiUrl(text)
-                with(sharedPref!!.edit()) {
-                    putString(preference.key, text)
-                    apply()
-                }
-                text
-            }
-        }
+        //TODO make the editText Preference alters the SharedPreferences
 
         val history: Preference? = findPreference(getString(R.string.settings_key_history))
         val pseudo: Preference? = findPreference(getString(R.string.settings_key_last_pseudo))
 
         // first set of summaries
-        pseudo?.summary = sharedPref?.getString(pseudo?.key, "")
-        history?.summary = sharedPref?.getString(history?.key, "")
+        pseudo?.summary = sharedPref.getString(pseudo?.key, "")
+        baseUrl?.summary = getString(R.string.settings_api_summary)
+        history?.summary = sharedPref.getString(history?.key, "")
 
         // Set onChangeListener
         if (pseudo != null && history != null && baseUrl != null) {
             val listener = ChangeListener(pseudo = pseudo, url = baseUrl, history)
-            sharedPref?.registerOnSharedPreferenceChangeListener(listener)
+            sharedPref.registerOnSharedPreferenceChangeListener(listener)
+            baseUrl.onPreferenceChangeListener = (EditTextChangeListener(sharedPref, requireActivity()))
         }
     }
 
@@ -182,26 +126,37 @@ class SettingsFragment : PreferenceFragmentCompat() {
                          private val url : EditTextPreference,
                          private val history : Preference):
         SharedPreferences.OnSharedPreferenceChangeListener {
-        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
             Log.d(D_TAG, "entrou no changelistener")
             // Showing the updated values
             when (key) {
                 pseudo.key -> {
-                    pseudo.summary = sharedPreferences?.getString(key, "")
+                    pseudo.summary = sharedPreferences.getString(key, "")
                 }
                 history.key -> {
-                    history.summary = sharedPreferences?.getString(key, "")
-                }
-                url.key -> {
-                    Log.d(D_TAG +"URLChangeListener", "Entererd and url.text is ${url.text} and its value=${sharedPreferences?.getString(key, "")}")
-                    //url.text = sharedPreferences?.getString(key, "")
-                    //url.summary = sharedPreferences?.getString(key, "")
+                    history.summary = sharedPreferences.getString(key, "")
                 }
                 else -> {}
             }
-            Log.d(D_TAG +" fim", "$key : ${sharedPreferences?.getString(key, "")}")
+            Log.d("$D_TAG fim", "$key : ${sharedPreferences.getString(key, "")}")
         }
 
+    }
+    class EditTextChangeListener(private val sharedPref : SharedPreferences, private val activity: Activity) : Preference.OnPreferenceChangeListener {
+        override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
+            val newURl = (preference as EditTextPreference).text
+
+            if (newURl == "") {
+                with(sharedPref.edit()) {
+                    putString(activity.getString(R.string.settings_key_apiurl), BASE_URL)
+                }
+            }
+
+            with(sharedPref.edit()) {
+                putString(activity.getString(R.string.settings_key_apiurl), newURl)
+            }
+            return true
+        }
     }
 
 }

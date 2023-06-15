@@ -1,15 +1,19 @@
-package com.example.tea3_rodriguesmakiyama.retrofit
+package com.example.tea3_rodriguesmakiyama.data.network.retrofit
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Url
 
 const val BASE_URL = "http://tomnab.fr/todo-api/"
 
@@ -18,7 +22,7 @@ private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
 /* Creates a retrofit object, associating it to a converter (our moshi object, created by a MoshiConvertFactory)
     and the base URL */
-private val retrofit = Retrofit.Builder()
+private var retrofit = Retrofit.Builder()
     .addConverterFactory(MoshiConverterFactory.create(moshi))
     .baseUrl(BASE_URL)
     .build()
@@ -30,7 +34,8 @@ interface RetrofitApiService {
                             @Query("password") password : String) : Response
 
     @POST("users?pseudo=toto&pass=tata")
-    suspend fun addNewUser(@Query("pseudo") pseudo : String,
+    suspend fun addNewUser(@Url url: String,
+                           @Query("pseudo") pseudo : String,
                            @Query("pass") password : String,
                            @Query("hash") hash : String) : Response
 
@@ -58,7 +63,7 @@ interface RetrofitApiService {
     suspend fun updateItemOfList(@Path("listId") listId : Int,
                                  @Path("itemId") itemId : Int,
                                  @Query("check") check : Int,
-                                 @Query("hash") hash : String) : Response
+                                 @Header("hash") hash : String) : Response
 
     @DELETE("lists/{listId}/items/{itemId}")
     suspend fun deleteItemOfList(@Path("listId") listId : Int,

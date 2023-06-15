@@ -4,19 +4,23 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.example.TEA3_RodriguesMakiyama.R
 import com.example.tea3_rodriguesmakiyama.api.Api
 import com.example.tea3_rodriguesmakiyama.classes.Data
+import com.example.tea3_rodriguesmakiyama.data.database.entities.ListEntity
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,64 +28,78 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class ChoixListActivity: TEAActivity() {
-    lateinit var data : Data
-
     lateinit var okButton : Button
     lateinit var listNameET : EditText
-    lateinit var listRV_adapter : ListAdapter
+    private lateinit var listRV_adapter : ListAdapter
 
-    val mContext = this
+    lateinit var lists: MutableList<ListEntity>
 
-    private val coroutineScope = CoroutineScope(
-        Dispatchers.Main
-    )
+    var pseudo: String = ""
+    var hash = ""
+    var isCache = false
+
+    private val mContext = this
 
     override fun onCreate(savedInstanceState: Bundle?) {
         setContentView(R.layout.activity_choix_list)
         super.onCreate(savedInstanceState)
 
+        // Setup RecyclerView
+        val listRV = findViewById<RecyclerView>(R.id.listRV)
+
         okButton = findViewById(R.id.buttonOKlist)
         listNameET = findViewById(R.id.newListET)
 
-        // Get data
-        intent?.extras?.getString("data")?.let {
-            data = Gson().fromJson(it, Data::class.java)
+        val loading = findViewById<ProgressBar>(R.id.loading)
+
+        // Get data from other activity
+        intent.extras?.getBoolean(getString(R.string.key_is_cache))?.let {
+            isCache = it
+        }
+        intent.extras?.getString(getString(R.string.key_pseudo))?.let {
+            pseudo = it
+        }
+        intent.extras?.getString(getString(R.string.key_hash))?.let {
+            hash = it
+        }
+        // Get data from database and show on RecyclerView
+        coroutineScope.launch {
+            loading.visibility = View.VISIBLE
+            try {
+                Log.d("getDataChoix", "beginning: iscache:${intent.extras?.getBoolean(getString(R.string.key_is_cache))}")
+                lists = if (!intent.extras?.getBoolean(getString(R.string.key_is_cache))!!) {
+                    Log.d("getDataChoix", "entered getListFromApi")
+                    dataProvider.getListsFromAPI(hash, pseudo).toMutableList()
+                } else {
+                    Log.d("getDataChoix", "entered getCacheList")
+                    dataProvider.getCacheLists(pseudo).toMutableList()
+                }
+                Log.d("getDataChoix", "lists: $lists iscache:$isCache")
+                listRV_adapter = ListAdapter(lists)
+                listRV.adapter = listRV_adapter
+                loading.visibility = View.GONE
+            } catch (e: Exception) {
+                Log.e("get data", "Error: ${e.message}")
+            }
         }
 
         // Monitors internet connection
         coroutineScope.launch {
+            var backUpDone = false
             while(true) {
-                if(!Api.checkNetwork(mContext) && okButton.isClickable) {
-                    okButton.isClickable = false
-                    okButton.setBackgroundColor(Color.rgb(93,93,93))
-                } else if(Api.checkNetwork(mContext) && !okButton.isClickable) {
-                    okButton.isClickable = true
-                    okButton.setBackgroundColor(Color.rgb(103,80,164))
+                if(!Api.checkNetwork(mContext) && !isCache) {
+                    backUpDone = false
+                    isCache = true
+                } else if(Api.checkNetwork(mContext) && isCache && !backUpDone) {
+                    Log.d("showList", "chama uploaddifferences iscache:$isCache")
+                    uploadCacheDifferences(pseudo, hash)
+                    reloadList()
+                    backUpDone = true
+                    isCache = false
                 }
                 delay(1000)
             }
         }
-
-        // Change ActionBar's name (optional)
-        supportActionBar?.title = "Listes de ${data.getPseudo()}"
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        // Setup RecyclerView
-        val listRV = findViewById<RecyclerView>(R.id.listRV)
-        var lists: MutableList<String> = mutableListOf()
-        coroutineScope.launch {
-            val listsApi = Api.getLists(data.getHash() ?: "").lists
-            listsApi.forEach {
-                lists.add(it.label)
-            }
-
-            listRV_adapter = ListAdapter(lists, mContext)
-            listRV.adapter = listRV_adapter
-        }
-        listRV.layoutManager = LinearLayoutManager(this)
 
         // Setup callback to add new list
         okButton.setOnClickListener {
@@ -89,13 +107,13 @@ class ChoixListActivity: TEAActivity() {
 
             if(newListName.isNotEmpty()) {
                 coroutineScope.launch {
-                    val response = Api.getItems(newListName, data.getHash()?:"")
-                    if(!response.success) {
+                    if(lists.find { it -> it.label == newListName } == null) {
                         listNameET.setText("")
-                        Api.addList(newListName, data.getHash()?:"")
-                        lists.add(newListName)
-
-                        listRV_adapter.notifyItemInserted(lists.size-1)
+                        val idApi = dataProvider.addList(newListName, pseudo, hash)
+                        val newList = ListEntity(idAPI = idApi, label = newListName, fromPseudo = pseudo)
+                        lists.add(newList)
+                        Log.d("addnovalista", "lista antes de notificar o adapter $lists.size")
+                        listRV_adapter.notifyItemInserted(lists.size - 1)
                     } else {
                         toastAlerter("Cette liste existe déjà")
                     }
@@ -104,76 +122,57 @@ class ChoixListActivity: TEAActivity() {
                 toastAlerter("Saisissez un label valide")
             }
         }
+
+        // Change ActionBar's name (optional)
+        supportActionBar?.title = "Listes de $pseudo"
+    }
+
+    private suspend fun reloadList() {
+        val newLists = dataProvider.getListsFromAPI(pseudo = pseudo, hash = hash)
+        if (!lists.containsAll(newLists)) {
+            lists.removeAll(lists)
+            lists.addAll(newLists)
+            listRV_adapter.notifyDataSetChanged()
+        }
     }
 
     override fun onBackPressed() {
-        val int = Intent()
-        int.putExtra("data", data.toJson())
-        setResult(Activity.RESULT_OK, int)
-
         finish()
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, dataAct: Intent?) {
-        super.onActivityResult(requestCode, resultCode, dataAct)
-        if(requestCode == 2 && resultCode == Activity.RESULT_OK) {
-            dataAct?.extras?.getString("data")?.let {
-                data = Gson().fromJson(it, Data::class.java)
+    private fun deleteList(position: Int) {
+        coroutineScope.launch {
+            if (Api.checkNetwork(mContext)) {
+                val isDeleted = dataProvider.deleteList(lists[position].label, lists[position].idAPI!!, hash)
+                if (isDeleted) {
+                    lists.removeAt(position)
+                    listRV_adapter.notifyItemRemoved(position)
+                    Log.d("deleteItem", "$isDeleted = delete item at $position")
+                } else {
+                    toastAlerter(getString(R.string.delete_error_message))
+                }
+            } else {
+                toastAlerter(getString(R.string.network_error_message))
             }
         }
     }
 
     // RecyclerView
     inner class ListAdapter(
-        private val lists : MutableList<String>,
-        private val mContext : Activity
+        private val lists : MutableList<ListEntity>,
     ) : RecyclerView.Adapter<ViewHolder>() {
         inner class ListViewHolder(itemView : View) : ViewHolder(itemView) {
-            fun bind(lists: MutableList<String>, position: Int) {
-                itemView.findViewById<TextView>(R.id.listName).text = lists[position]
+            fun bind(lists: MutableList<ListEntity>, position: Int) {
+                val listName = itemView.findViewById<TextView>(R.id.listName)
+                listName.text = lists[position].label
 
                 itemView.setOnClickListener {
-                    if(Api.checkNetwork(mContext)) {
-                        val dataJson = data.toJson()
-                        mContext.startActivityForResult(
-                            Intent(
-                                applicationContext,
-                                ShowListActivity::class.java
-                            ).apply {
-                                val bundle = Bundle()
-                                bundle.putString(
-                                    "list",
-                                    itemView.findViewById<TextView>(R.id.listName).text.toString()
-                                )
-                                bundle.putString("data", dataJson)
-                                putExtras(bundle)
-                            }, 2
-                        )
-                    } else {
-                        toastAlerter("Vérifiez votre connexion internet")
-                    }
+                    onNavigateToShowList(lists[position].label)
                 }
 
+                // ClickListener to delete the list
                 itemView.findViewById<ImageView>(R.id.deleteList).setOnClickListener {
-                    if(Api.checkNetwork(mContext)) {
-                        var deletedPosition = 0
-                        lists.forEachIndexed { index, s ->
-                            if (s == itemView.findViewById<TextView>(R.id.listName).text.toString()) {
-                                deletedPosition = index
-                            }
-                        }
-
-                        lists.removeAt(deletedPosition)
-                        listRV_adapter.notifyItemRemoved(deletedPosition)
-                        coroutineScope.launch {
-                            Api.delList(
-                                itemView.findViewById<TextView>(R.id.listName).text.toString(),
-                                data.getHash() ?: ""
-                            )
-                        }
-                    } else {
-                        toastAlerter("Vérifiez votre connexion internet")
-                    }
+                    deleteList(position)
                 }
             }
         }
@@ -195,24 +194,18 @@ class ChoixListActivity: TEAActivity() {
         override fun getItemCount(): Int = lists.size
     }
 
-    override fun navigateToSettings() {
-        val dataJson = data.toJson()
-        startActivityForResult(Intent(applicationContext, SettingsActivity::class.java).apply {
-            val bundle = Bundle()
-            bundle.putString("data", dataJson)
-            putExtras(bundle)
-        }, 1)
-    }
-
-    override fun disconnect() {
-        data.disconnect()
-        saveData(data, getString(R.string.dataFile))
-
-        val dataJson = data.toJson()
-        startActivity(Intent(applicationContext, MainActivity::class.java).apply {
-            val bundle = Bundle()
-            bundle.putString("data", dataJson)
-            putExtras(bundle)
-        })
+    private fun onNavigateToShowList(label: String) {
+        coroutineScope.launch {
+            val listId = lists.find { it -> it.label==label }?.idAPI ?: -1
+            startActivity(Intent(applicationContext, ShowListActivity::class.java).apply {
+                val bundle = Bundle()
+                bundle.putString(getString(R.string.key_list_label), label)
+                bundle.putInt(getString(R.string.key_list_id), listId)
+                bundle.putString(getString(R.string.key_hash), hash)
+                bundle.putBoolean(getString(R.string.key_is_cache), isCache)
+                bundle.putString(getString(R.string.key_pseudo), pseudo)
+                putExtras(bundle)
+            })
+        }
     }
 }
