@@ -1,8 +1,6 @@
 package com.example.tea3_rodriguesmakiyama.activities
 
-import android.app.Activity
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,24 +11,20 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.ViewHolder
 import com.example.TEA3_RodriguesMakiyama.R
 import com.example.tea3_rodriguesmakiyama.api.Api
-import com.example.tea3_rodriguesmakiyama.classes.Data
 import com.example.tea3_rodriguesmakiyama.data.database.entities.ListEntity
-import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private const val LOG_TAG = "ChoixListActivity"
 
 class ChoixListActivity: TEAActivity() {
     lateinit var okButton : Button
     lateinit var listNameET : EditText
-    private lateinit var listRV_adapter : ListAdapter
+    private lateinit var listRVAdapter : ListAdapter
 
     lateinit var lists: MutableList<ListEntity>
 
@@ -75,8 +69,8 @@ class ChoixListActivity: TEAActivity() {
                     dataProvider.getCacheLists(pseudo).toMutableList()
                 }
                 Log.d("getDataChoix", "lists: $lists iscache:$isCache")
-                listRV_adapter = ListAdapter(lists)
-                listRV.adapter = listRV_adapter
+                listRVAdapter = ListAdapter(lists)
+                listRV.adapter = listRVAdapter
                 loading.visibility = View.GONE
             } catch (e: Exception) {
                 Log.e("get data", "Error: ${e.message}")
@@ -113,7 +107,7 @@ class ChoixListActivity: TEAActivity() {
                         val newList = ListEntity(idAPI = idApi, label = newListName, fromPseudo = pseudo)
                         lists.add(newList)
                         Log.d("addnovalista", "lista antes de notificar o adapter $lists.size")
-                        listRV_adapter.notifyItemInserted(lists.size - 1)
+                        listRVAdapter.notifyItemInserted(lists.size - 1)
                     } else {
                         toastAlerter("Cette liste existe déjà")
                     }
@@ -132,7 +126,7 @@ class ChoixListActivity: TEAActivity() {
         if (!lists.containsAll(newLists)) {
             lists.removeAll(lists)
             lists.addAll(newLists)
-            listRV_adapter.notifyDataSetChanged()
+            listRVAdapter.notifyDataSetChanged()
         }
     }
 
@@ -143,13 +137,22 @@ class ChoixListActivity: TEAActivity() {
     private fun deleteList(position: Int) {
         coroutineScope.launch {
             if (Api.checkNetwork(mContext)) {
-                val isDeleted = dataProvider.deleteList(lists[position].label, lists[position].idAPI!!, hash)
-                if (isDeleted) {
-                    lists.removeAt(position)
-                    listRV_adapter.notifyItemRemoved(position)
-                    Log.d("deleteItem", "$isDeleted = delete item at $position")
-                } else {
-                    toastAlerter(getString(R.string.delete_error_message))
+                try {
+                    val isDeleted = dataProvider.deleteList(
+                        lists[position].label,
+                        lists[position].idAPI!!,
+                        hash
+                    )
+                    if (isDeleted) {
+                        lists.removeAt(position)
+                        listRVAdapter.notifyItemRemoved(position)
+                        Log.d("$LOG_TAG deleteItem", "$isDeleted = delete item at $position")
+                    } else {
+                        toastAlerter(getString(R.string.delete_error_message))
+                    }
+                } catch (e : Exception) {
+                    reloadList()
+                    Log.i("$LOG_TAG onDeleteList", "Deleted to fast?\nError: ${e.message}")
                 }
             } else {
                 toastAlerter(getString(R.string.network_error_message))
@@ -167,7 +170,11 @@ class ChoixListActivity: TEAActivity() {
                 listName.text = lists[position].label
 
                 itemView.setOnClickListener {
-                    onNavigateToShowList(lists[position].label)
+                    try {
+                        onNavigateToShowList(lists[position].label)
+                    } catch (e : Exception) {
+                        Log.i("$LOG_TAG bindListViewHolder", "Clicked too fast?\nError: ${e.message}")
+                    }
                 }
 
                 // ClickListener to delete the list

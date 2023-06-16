@@ -87,7 +87,7 @@ class DataProvider(application : Application) {
         }
     }
 
-    /** Gets lists from API and saves on cache (DELETES old cache before!)
+    /** Gets lists from API and saves on cache (on conflict, keep the database version)
      * returns emptylist if any problem */
     suspend fun getListsFromAPI(hash: String, pseudo: String) : List<ListEntity> {
         return withContext(Dispatchers.Default) {
@@ -104,14 +104,14 @@ class DataProvider(application : Application) {
                     }
 
                     val listsCache = database.toDoDao.getListsFrom(pseudo)
-                    // add/update lists retrieved on DB
+                    // add lists retrieved on DB
                     for (list in lists) {
                        var found = listsCache.find { it.idAPI == list.idAPI }
                        if (found == null) {
                            found = list
+                           database.toDoDao.addList(found)
+                           Log.d("$LOG_TAG getListsFromApi", "added list\n$list")
                        }
-                       database.toDoDao.addList(found)
-                       Log.d("$LOG_TAG getListsFromApi", "added/updated list\n$list")
                     }
 
                     // return lists recently saved on DB
@@ -134,7 +134,8 @@ class DataProvider(application : Application) {
         }
     }
 
-    /** Gets items from api and saves on cache (erases all and saves). Returns a list with ItemEntity*/
+    /** Gets items from api and saves on cache (on conflict, keep the database version). Returns a list with ItemEntity, or
+     * null if any error occurs */
     suspend fun getItemsFromAPI(hash: String, listLabel: String, listId: Int) : List<ItemEntity> {
         return withContext(Dispatchers.Default) {
             try {
@@ -152,17 +153,14 @@ class DataProvider(application : Application) {
                     }
 
                     val itemsCache = database.toDoDao.getItemsFromList(listLabel)
-                    // add/update items retrieved on DB
+                    // add items retrieved on DB
                     for (item in items) {
                         var found = itemsCache.find { it.idAPI == item.idAPI  }
-                        if (found != null) {
-                            found.checked = item.checked
-                            found.url = item.url
-                        } else {
+                        if (found == null) {
                             found = item
+                            database.toDoDao.addItem(found)
+                            Log.d("$LOG_TAG getItemsFromApi", "added/updated item\n$item")
                         }
-                        database.toDoDao.addItem(found)
-                        Log.d("$LOG_TAG getItemsFromApi", "added/updated item\n$item")
                     }
 
                     // Get recently added items from DB
@@ -192,6 +190,7 @@ class DataProvider(application : Application) {
             if (lists.isNotEmpty()) {
                 for (list in lists) {
                     val items = database.toDoDao.getItemsFromList(list.label)
+                    // If list is NOT in API
                     if (list.idAPI == null) {
                         try {
                             // Uploads offline List
@@ -227,10 +226,18 @@ class DataProvider(application : Application) {
                                             fromList = list.label
                                         )
                                     )
-                                    Log.d(
-                                        "$LOG_TAG updateDifferencesToApi",
-                                        "updated item: ${it.label} from list: ${list.label}"
-                                    )
+                                    try {
+                                        RetrofitApi.retrofitService.updateItemOfList(
+                                            listId = response.list.id,
+                                            itemId = itemResponse.item.id,
+                                            check = it.isChecked(),
+                                            hash = hash)
+                                    } catch (e: Exception) {
+                                        Log.e("$LOG_TAG updateDifferencesToApi", "error updating new item ${it.label} from ${list.label}:\n${e.message}")
+                                    }
+
+                                    Log.e("$LOG_TAG updateDifferencesToApi",
+                                        "uploaded and updated new item: ${it.label} from list: ${list.label}")
                                 }
                             }
                             Log.d("$LOG_TAG updateDifferencesToApi", "uploaded list: $list")

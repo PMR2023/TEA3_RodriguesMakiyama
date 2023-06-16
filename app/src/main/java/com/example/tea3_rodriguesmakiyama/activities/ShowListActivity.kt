@@ -206,6 +206,7 @@ class ShowListActivity: TEAActivity() {
                     itemsList.remove(item)
                     adapter.notifyItemRemoved(position)
                 } else {
+                    reloadItems()
                     toastAlerter(getString(R.string.delete_error_message))
                 }
             } else {
